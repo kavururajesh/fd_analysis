@@ -21,8 +21,8 @@ venv/
 logs/
 output/
 
-# Local banking datasets
-data/
+# Local banking datasets (top-level runtime folder only)
+/data/
 
 # OS files
 .DS_Store
