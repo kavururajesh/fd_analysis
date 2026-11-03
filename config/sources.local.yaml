@@ -1,0 +1,28 @@
+# LOCAL sources: local copies of the bank pages (served by the built-in fixture server). Same agent code as live mode.
+# status: current | proxy (not corporate-only) | default_table (amount tabs not read) | stale (old sheet)
+# layout: where the numbers are. null = the Collector agent calibrates it and a human approves the result.
+sources:
+- {id: sber_corporate, bank: Sberbank, product: corporate, status: current, effective: '2026-10-21', kind: html,
+   url: '{FIXTURE_BASE}/sber.html', expect: {min_rows: 50},
+   layout: {table_index: 0, orientation: tenor_rows, label_col: 0, header_row: 0}}
+- {id: hdfc_withdrawable, bank: HDFC, product: withdrawable, status: proxy, effective: '2026-10-21', kind: browser,
+   url: '{FIXTURE_BASE}/hdfc.html', actions: [{click: 'text=Show large deposit rates'}], expect: {min_rows: 50},
+   layout: {table_index: 0, orientation: tenor_rows, label_col: 0, header_row: 0}}
+- {id: rbl_callable, bank: RBL, product: callable, status: current, effective: '2026-10-21', kind: pdf,
+   url: '{FIXTURE_BASE}/rbl_c.pdf', expect: {min_rows: 100},
+   layout: {table_index: 0, orientation: tenor_rows, label_col: 0, header_row: 0}}
+- {id: rbl_noncallable, bank: RBL, product: noncallable, status: current, effective: '2026-10-21', kind: pdf,
+   url: '{FIXTURE_BASE}/rbl_n.pdf', expect: {min_rows: 100},
+   layout: {table_index: 0, orientation: tenor_rows, label_col: 0, header_row: 0}}
+- {id: idfc_callable, bank: IDFC FIRST, product: callable, status: stale, effective: '2026-04-30', kind: html,
+   url: '{FIXTURE_BASE}/idfc_c.html', expect: {min_rows: 30}, layout: null}
+- {id: idfc_noncallable, bank: IDFC FIRST, product: noncallable, status: stale, effective: '2026-04-30', kind: html,
+   url: '{FIXTURE_BASE}/idfc_n.html', expect: {min_rows: 30}, layout: null}
+- {id: sbi_bulk, bank: SBI, product: bulk, status: current, effective: '2026-10-17', kind: html,
+   url: '{FIXTURE_BASE}/sbi.html', expect: {min_rows: 8}, layout: null}
+- {id: icici_callable, bank: ICICI, product: callable, status: default_table, effective: '2026-10-21', kind: html,
+   url: '{FIXTURE_BASE}/icici_c.html', expect: {min_rows: 8},
+   layout: {table_index: 0, orientation: tenor_rows, label_col: 0, header_row: 0, value_cols: [1], default_label: 'Default/popular'}}
+- {id: icici_noncallable, bank: ICICI, product: noncallable, status: default_table, effective: '2026-10-21', kind: html,
+   url: '{FIXTURE_BASE}/icici_n.html', expect: {min_rows: 8},
+   layout: {table_index: 0, orientation: tenor_rows, label_col: 0, header_row: 0, value_cols: [1], default_label: 'Default/popular'}}

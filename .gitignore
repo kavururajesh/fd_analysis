@@ -1,0 +1,29 @@
+# Node.js
+node_modules/
+web/node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs and generated files
+logs/
+output/
+
+# Local banking datasets
+data/
+
+# OS files
+.DS_Store
+Thumbs.db

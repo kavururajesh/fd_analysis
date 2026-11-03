@@ -1,0 +1,39 @@
+# LIVE sources: the real bank pages. Layouts are null on purpose: on the first run the Collector agent calibrates each page,
+# a human approves the saved layout, and later runs use the approved layout without calling the LLM.
+# kind: html (plain page) | browser (Playwright: JS pages, tabs) | pdf.   actions: Playwright steps before reading, e.g. [{click: 'text=Non-callable'}]
+# Check first on your laptop:  python -m src.main check <source_id>
+sources:
+- {id: sber_corporate, bank: Sberbank, product: corporate, status: current, effective: '', kind: browser,
+   url: 'https://sber.bank.in/tariffs-and-conditions', expect: {min_rows: 40}, layout: null}
+- {id: hdfc_withdrawable, bank: HDFC, product: withdrawable, status: proxy, effective: '', kind: browser,
+   url: 'https://www.hdfc.bank.in/interest-rates', expect: {min_rows: 40}, layout: null}
+- {id: icici_callable, bank: ICICI, product: callable, status: default_table, effective: '', kind: browser,
+   url: 'https://www.icici.bank.in/business-banking/fixed-deposit/fd-interest-rates', expect: {min_rows: 8}, layout: null}
+- {id: sbi_bulk, bank: SBI, product: bulk, status: current, effective: '', kind: browser,
+   url: 'https://sbi.co.in/web/interest-rates/deposit-rates/domestic-bulk-term-deposits', expect: {min_rows: 8}, layout: null}
+- {id: rbl_callable, bank: RBL, product: callable, status: current, effective: '', kind: pdf,
+   url: 'https://webassets.rbl.bank.in/document/pdfs/callable-bulk-fd-rates.pdf', expect: {min_rows: 100}, layout: null}
+- {id: rbl_noncallable, bank: RBL, product: noncallable, status: current, effective: '', kind: pdf,
+   url: 'https://webassets.rbl.bank.in/document/pdfs/non-callable-bulk-fd-rates.pdf', expect: {min_rows: 100}, layout: null}
+# ---- Additional major banks (URLs found by web search on 3-Nov-2026; NOT yet opened or calibrated - verify each with `python -m src.main check <id>`) ----
+# A failed peer source only produces a warning (the previous rates are carried forward as 'stale'); it never stops the refresh.
+- {id: axis_fd_plus, bank: Axis, product: domestic_plus, status: proxy, effective: '', kind: pdf,
+   url: 'https://www.axis.bank.in/docs/default-source/default-document-library/interest-rates/domestic-fixed-deposits-plus-22-september-26.pdf',
+   note: 'PDF file name carries the revision date - update the URL when Axis publishes a new sheet. Check if it covers 3 Cr+ slabs.', expect: {min_rows: 8}, layout: null}
+- {id: pnb_term_deposits, bank: PNB, product: domestic_bulk, status: current, effective: '', kind: browser,
+   url: 'https://pnb.bank.in/Interest-Rates-Deposit.html', expect: {min_rows: 8}, layout: null}
+- {id: canara_term_deposits, bank: Canara, product: term_deposits, status: proxy, effective: '', kind: browser,
+   url: 'https://canarabank.bank.in/term-deposits-rate-of-interest-p.a.', note: 'Page lists several tables; the agent picks the Rs 3 Cr+ table.', expect: {min_rows: 8}, layout: null}
+- {id: union_non_callable, bank: Union Bank, product: non_callable, status: proxy, effective: '', kind: browser,
+   url: 'https://www.unionbankofindia.bank.in/en/Details/union-non-callable-term-deposits-scheme', expect: {min_rows: 8}, layout: null}
+- {id: equitas_bulk, bank: Equitas SFB, product: bulk, status: current, effective: '', kind: pdf,
+   url: 'https://equitasbank.com/strapi-dev/uploads/BULK_DEPOSIT_RATES_as_on_21st_February_25_75e801b111.pdf',
+   note: 'This is a February 2025 sheet - replace with the latest bulk deposit PDF from equitasbank.com before use.', expect: {min_rows: 8}, layout: null}
+- {id: psb_bulk, bank: Punjab & Sind, product: bulk, status: current, effective: '', kind: pdf,
+   url: 'https://www.punjabandsind.bank.in/system/uploads/bulk_deposit_rate/2026070710345380485.pdf',
+   note: 'Newest PDF found was dated July 2026 - check the bank site for a later one.', expect: {min_rows: 8}, layout: null}
+# IDFC FIRST: add the current bulk-rate page/PDF url here when found (the workbook used an older 30-Apr-2026 sheet).
+#
+# Still to add - official bulk/corporate FD rate pages not found by search (only third-party sites showed up). Get the URL from the
+# bank's website or relationship team, then add a block like the ones above:
+#   Kotak Mahindra Bank, Yes Bank, IndusInd Bank, Bank of Baroda, Bank of India, Indian Bank, IDBI Bank, Federal Bank, AU Small Finance Bank, Bandhan Bank

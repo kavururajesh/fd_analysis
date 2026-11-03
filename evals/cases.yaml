@@ -1,0 +1,7 @@
+# Analyst evaluation cases. Run with the real GigaChat on your laptop:  python -m evals.evaluate_agent
+# must_contain: facts that must appear in the answer (figures come from the local snapshot data); grounded: every figure must be verified.
+- {q: "What is the best rate for 10 cr for 90 days?", must_contain: ["Sberbank", "7%"], grounded: true}
+- {q: "Where does Sberbank trail for a 5 cr deposit?", must_contain: ["SBI"], grounded: true}
+- {q: "How does deposit size change Sberbank's rate at 60 days?", must_contain: ["0.75%", "8.5%"], grounded: true}
+- {q: "Which sources are stale or proxy?", must_contain: ["IDFC", "HDFC"], grounded: true}
+- {q: "What is the weather in Delhi?", must_contain: ["only help with FD"], grounded: true}
