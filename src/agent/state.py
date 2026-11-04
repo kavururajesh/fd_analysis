@@ -1,4 +1,5 @@
 """Shared agent data structures: trace events (what the agents did) and results."""
+import threading
 from dataclasses import dataclass, field
 from typing import Any, Callable, List, Optional
 
@@ -20,20 +21,22 @@ class Trace:
     def __init__(self, run_id="chat", store=None, callback: Optional[Callable[[TraceEvent], None]] = None):
         self.run_id, self.store, self.callback = run_id, store, callback
         self.events: List[TraceEvent] = []
+        self._lock = threading.Lock()                # several collector threads emit at once
 
     def emit(self, agent, kind, text, data=None):
         ev = TraceEvent(agent, kind, str(text), data=data)
-        self.events.append(ev)
-        if self.store is not None:
-            try:
-                self.store.add_trace(self.run_id, agent, kind, ev.text[:2000], data)
-            except Exception:           # tracing must never break the agent
-                pass
-        if self.callback:
-            try:
-                self.callback(ev)
-            except Exception:
-                pass
+        with self._lock:
+            self.events.append(ev)
+            if self.store is not None:
+                try:
+                    self.store.add_trace(self.run_id, agent, kind, ev.text[:2000], data)
+                except Exception:           # tracing must never break the agent
+                    pass
+            if self.callback:
+                try:
+                    self.callback(ev)
+                except Exception:
+                    pass
         return ev
 
 

@@ -59,7 +59,8 @@ def meta():
                source_mode=S.SOURCE_MODE, run_id=rid, updated=man.get("created", ""),
                suggestions=["Compare Sberbank with other banks at 10 cr across tenors", "What is the best rate for 10 cr for 90 days?",
                             "Show how deposit size changes the rate at 90 days", "What share of tenors does Sberbank lead at 5 cr?"],
-               status_help=STATUS_HELP, sber=S.SBER, tenors=[dict(days=d, label=fmt_day(d)) for d in S.TENOR_GRID])
+               status_help=STATUS_HELP, sber=S.SBER, tenors=[dict(days=d, label=fmt_day(d)) for d in S.TENOR_GRID],
+               as_of="", peers=[], statuses=[], default_statuses=[], rows=0, banks=0)   # always present, so the first start (no data yet) renders
     if df is not None:
         sber = df[df.series == S.SBER]
         out.update(as_of=str(sber.effective.iloc[0]) if len(sber) else "",

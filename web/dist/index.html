@@ -5,8 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Corporate Deposits Analytics · Sberbank India</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231FA34A'/%3E%3Cpath d='M9 20l5-6 4 4 5-8' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
-    <script type="module" crossorigin src="/assets/index-BYdS12M8.js"></script>
+    <script type="module" crossorigin src="/assets/index-C5t3r11j.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-Q7o4THwC.css">
   </head>
-  <body><div id="root"></div></body>
+  <body><div id="root"></div>
+    <script>
+      /* If the app does not start, show why instead of a blank page */
+      (function () {
+        var errs = [];
+        window.addEventListener("error", function (e) {
+          errs.push((e.message || "load error") + (e.filename ? "  (" + e.filename + ")" : (e.target && (e.target.src || e.target.href) ? "  (" + (e.target.src || e.target.href) + ")" : "")));
+        }, true);
+        window.addEventListener("unhandledrejection", function (e) { errs.push("Promise error: " + (e.reason && e.reason.message || e.reason)); });
+        setTimeout(function () {
+          var r = document.getElementById("root");
+          if (r && !r.children.length) {
+            r.innerHTML = '<div style="font:15px/1.5 Segoe UI,Arial;max-width:720px;margin:48px auto;padding:20px;border:1px solid #e5c07b;background:#fff8e6;border-radius:10px;color:#3a2f10">' +
+              '<b>The app did not start.</b><br>Please send a screenshot of this box to the developer.<br><br>' +
+              '<code style="white-space:pre-wrap;font-size:13px">' + (errs.length ? errs.join("\n") : "No script error was reported. The JavaScript file may be blocked or served with the wrong type. Try Ctrl+Shift+R, or open the page in another browser.") + '</code></div>';
+          }
+        }, 4000);
+      })();
+    </script></body>
 </html>

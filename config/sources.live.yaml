@@ -32,8 +32,49 @@ sources:
 - {id: psb_bulk, bank: Punjab & Sind, product: bulk, status: current, effective: '', kind: pdf,
    url: 'https://www.punjabandsind.bank.in/system/uploads/bulk_deposit_rate/2026070710345380485.pdf',
    note: 'Newest PDF found was dated July 2026 - check the bank site for a later one.', expect: {min_rows: 8}, layout: null}
+# ---- Second wave: official pages found by web search on 3-Nov-2026 (not yet opened or calibrated - run `python -m src.main check-all` on the bank network) ----
+# status 'current' = a table for large (Rs 3 Cr+) deposits is expected; 'proxy' = general deposit table used as the nearest comparable.
+- {id: kotak_td, bank: Kotak, product: term_deposits, status: proxy, effective: '', kind: browser,
+   url: 'https://www.kotak.bank.in/en/rates/interest-rates.html', note: 'Look for the Rs 3 Cr and above table; the old site m.kotak.com/td-rates also lists rates.', expect: {min_rows: 8}, layout: null}
+- {id: bob_upto_10cr, bank: Bank of Baroda, product: callable_noncallable_upto_10cr, status: current, effective: '', kind: browser,
+   url: 'https://bankofbaroda.bank.in/interest-rate-and-service-charges/deposits-interest-rates/fixed-deposits-callable-and-non-callable-upto-ten-crores', expect: {min_rows: 8}, layout: null}
+- {id: bob_above_10cr, bank: Bank of Baroda, product: callable_noncallable_above_10cr, status: current, effective: '', kind: browser,
+   url: 'https://bankofbaroda.bank.in/interest-rate-and-service-charges/deposits-interest-rates/fixed-deposits-callable-and-non-callable-above-ten-crores', expect: {min_rows: 8}, layout: null}
+- {id: boi_term_deposit, bank: Bank of India, product: domestic_td, status: proxy, effective: '', kind: browser,
+   url: 'https://bankofindia.bank.in/interest-rate/rupee-term-deposit-rate', note: 'Page has several tables; the agent picks the Rs 3 Cr+ one.', expect: {min_rows: 8}, layout: null}
+- {id: indian_bank_deposit, bank: Indian Bank, product: bulk, status: current, effective: '', kind: browser,
+   url: 'https://indianbank.bank.in/departments/deposit-rates/', note: 'A second page lists deposits above Rs 5 Cr: indianbank.bank.in/departments/interest-rates-for-deposits-of-above-rs-5-00crore/', expect: {min_rows: 8}, layout: null}
+- {id: union_bulk_pdf, bank: Union Bank, product: bulk, status: current, effective: '', kind: pdf,
+   url: 'https://www.unionbankofindia.bank.in/pdf/interest-rates-for-bulk-deposit.pdf', expect: {min_rows: 8}, layout: null}
+- {id: yes_bulk_pdf, bank: Yes Bank, product: bulk, status: current, effective: '', kind: pdf,
+   url: 'https://www.yes.bank.in/sites/web/content/published/api/v1.1/assets/CONTA391B2F09BF64C72BF6C2CD073F98131/native/bulk_fixed_deposit_interest_rates_v1_pdf.pdf?download=false', note: 'Bulk FD sheet with Rs 3 Cr and above slabs.', expect: {min_rows: 8}, layout: null}
+- {id: federal_deposit_plus, bank: Federal Bank, product: deposit_plus_noncallable, status: proxy, effective: '', kind: browser,
+   url: 'https://www.federal.bank.in/deposit-plus-rates', expect: {min_rows: 8}, layout: null}
+- {id: idbi_domestic, bank: IDBI Bank, product: domestic, status: proxy, effective: '', kind: browser,
+   url: 'https://www.idbi.bank.in/interest-rates.aspx', expect: {min_rows: 8}, layout: null}
+- {id: bandhan_rates, bank: Bandhan Bank, product: fixed_deposit, status: proxy, effective: '', kind: browser,
+   url: 'https://bandhan.bank.in/rates-charges', expect: {min_rows: 8}, layout: null}
+- {id: au_bulk, bank: AU Small Finance Bank, product: bulk_3cr_plus, status: current, effective: '', kind: browser,
+   url: 'https://www.au.bank.in/personal-banking/savings-account/bulk-fixed-deposit-interest-rates', note: 'Page title: Fixed Deposit Interest Rate >= 3 Crore.', expect: {min_rows: 8}, layout: null}
+- {id: indusind_fd, bank: IndusInd Bank, product: fixed_deposit, status: proxy, effective: '', kind: browser,
+   url: 'https://www.indusind.bank.in/in/en/personal/deposits/fixed-deposit.html', note: 'Find the Rs 3 Cr and above table; the bank also publishes rates at m.indusind.com/content/smart-phone/footer/rates.html', expect: {min_rows: 8}, layout: null}
+- {id: central_bank_td, bank: Central Bank of India, product: domestic_td, status: proxy, effective: '', kind: browser,
+   url: 'https://centralbank.bank.in/en/interest-rates-on-deposit', expect: {min_rows: 8}, layout: null}
+- {id: uco_deposit, bank: UCO Bank, product: deposit_schemes, status: proxy, effective: '', kind: browser,
+   url: 'https://www.uco.bank.in/interest-rates-on-deposit-schemes', expect: {min_rows: 8}, layout: null}
+- {id: bom_domestic_td, bank: Bank of Maharashtra, product: domestic_td, status: proxy, effective: '', kind: browser,
+   url: 'https://bankofmaharashtra.bank.in/domestic-term-deposits', expect: {min_rows: 8}, layout: null}
+- {id: iob_domestic, bank: Indian Overseas Bank, product: domestic, status: proxy, effective: '', kind: browser,
+   url: 'https://www.iob.in/Domestic_Rates', expect: {min_rows: 8}, layout: null}
+- {id: sib_domestic, bank: South Indian Bank, product: domestic_td, status: proxy, effective: '', kind: browser,
+   url: 'https://www.southindianbank.bank.in/quick-links/interest-rates', expect: {min_rows: 8}, layout: null}
+- {id: kvb_glance, bank: Karur Vysya Bank, product: deposit_rates, status: proxy, effective: '', kind: browser,
+   url: 'https://www.kvb.bank.in/personal/deposits/deposit-interest-rates-glance/', expect: {min_rows: 8}, layout: null}
+- {id: jkb_rates, bank: J&K Bank, product: rates, status: proxy, effective: '', kind: browser,
+   url: 'https://jkb.bank.in/interest-rates', expect: {min_rows: 8}, layout: null}
+- {id: cub_deposit, bank: City Union Bank, product: deposit_rates, status: proxy, effective: '', kind: browser,
+   url: 'https://www.cityunionbank.bank.in/deposit-interest-rate', expect: {min_rows: 8}, layout: null}
 # IDFC FIRST: add the current bulk-rate page/PDF url here when found (the workbook used an older 30-Apr-2026 sheet).
-#
-# Still to add - official bulk/corporate FD rate pages not found by search (only third-party sites showed up). Get the URL from the
-# bank's website or relationship team, then add a block like the ones above:
-#   Kotak Mahindra Bank, Yes Bank, IndusInd Bank, Bank of Baroda, Bank of India, Indian Bank, IDBI Bank, Federal Bank, AU Small Finance Bank, Bandhan Bank
+# Foreign banks (HSBC India, Standard Chartered, DBS) publish only retail rates online - ask their relationship teams for a corporate rate sheet.
+# Also still to add: DCB, Dhanlaxmi, CSB, TMB, Ujjivan SFB, Jana SFB (no official bulk-rate page was found by search).
+# After a new bank is calibrated, run `python -m src.main check-all` again and approve the run in the app.

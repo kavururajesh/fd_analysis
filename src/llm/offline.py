@@ -51,10 +51,8 @@ class OfflineLLM:
         if "list_sources" not in names:
             return _j("First I list the sources.", "list_sources")
         srcs = _load(obs[names.index("list_sources")]) or []
-        done = {a.get("source_id") for n, a in calls if n == "collect_source"}
-        for s in srcs:
-            if s["id"] not in done:
-                return _j(f"Collect {s['id']}.", "collect_source", {"source_id": s["id"]})
+        if "collect_all_sources" not in names:
+            return _j(f"Collect all {len(srcs)} sources at the same time.", "collect_all_sources")
         if "finalize_run" not in names:
             return _j("All sources collected; stage the run.", "finalize_run")
         if "write_review_brief" not in names:

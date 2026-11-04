@@ -38,5 +38,5 @@ def browser():
 
 @pytest.fixture()
 def files(tmp_path):
-    from src.data.files import DatasetFiles
+    from src.datastore.files import DatasetFiles
     return DatasetFiles(tmp_path / "current", tmp_path / "staging")

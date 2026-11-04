@@ -6,6 +6,7 @@
   approve RUN_ID  approve a staged run
   ask "question"  ask the analyst
   check SOURCE_ID open one source and show its tables (use before enabling a live source)
+  check-all [N]  open EVERY source in parallel (N workers, default from .env) and report which ones are reachable and have tables
   serve-fixtures  serve the local bank-page snapshots
   simulate-drift on|off  testing aid: change the layout of the local Sberbank snapshot
   eval            run the offline evaluations"""
@@ -58,6 +59,23 @@ def main(argv=None):
     if cmd == "ask" and rest:
         a = svc.ask(" ".join(rest))
         print(a.text, "\n\n[grounded]" if a.grounded else f"\n\n[UNVERIFIED figures: {a.unverified}]")
+        return 0
+    if cmd == "check-all":
+        from src.agent.parallel import ParallelCollector
+        from src.agent.state import Trace
+        from src.tools.browser import BrowserManager
+        workers = int(rest[0]) if rest else None
+        pc = ParallelCollector(svc.llm, svc.store, Trace("probe", None, lambda e: print("  ", e.text)), S.STAGING_DIR, browser_factory=BrowserManager, workers=workers)
+        b = BrowserManager()
+        try:
+            out = pc.probe(svc.sources(), browser=b)
+        finally:
+            b.close()
+        print(f"\n{'source':26}{'bank':24}{'kind':8}{'result':10}{'tables':8}{'date on page':14}{'sec':6} note")
+        for s in svc.sources():
+            r = out[s.id]
+            print(f"{r['id']:26}{r['bank'][:22]:24}{r['kind']:8}{'OK' if r['ok'] else 'PROBLEM':10}{r['tables']:<8}{r['effective']:14}{r['seconds']:<6} {r['error']}")
+        print(f"\n{sum(r['ok'] for r in out.values())}/{len(out)} sources opened with at least one table. For each PROBLEM: check the URL in a browser, then update config/sources.live.yaml.")
         return 0
     if cmd == "check" and rest:
         from src.domain.layout import preview, suggest_layout

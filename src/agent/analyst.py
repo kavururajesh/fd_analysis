@@ -43,7 +43,7 @@ class AnalystAgent:
             return ok, obs
         tools.call = recording_call
 
-        res = ReActExecutor(self.llm, tools, "analyst", "analyst", trace, S.ANALYST_MAX_STEPS).run(
+        res = ReActExecutor(self.llm, tools, "analyst", "analyst", trace, S.ANALYST_MAX_STEPS, require_tool=True).run(
             "QUESTION: " + question, history=self.memory.history())
         steps = [f"{e.kind}: {e.text}" for e in trace.events if e.kind in ("action", "warning", "error")]
         if res.status != "final" or not isinstance(res.output, str) or not res.output.strip():

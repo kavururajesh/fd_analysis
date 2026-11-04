@@ -1,29 +1,25 @@
-# Node.js
+# python / node
+__pycache__/
+*.pyc
+.pytest_cache/
 node_modules/
 web/node_modules/
 
-# Python
-__pycache__/
-*.pyc
-.venv/
-venv/
-
-# Environment and secrets
+# secrets and certificates: never commit these
 .env
 .env.*
 !.env.example
 *.pem
 *.key
-*.p12
-*.pfx
+*.crt
+*.crt.txt
+chain_pem.txt
 
-# Logs and generated files
+# runtime data created by the app (rebuilt on every refresh)
+/data/current/
+/data/staging/
+*.db
+samples/.drift
 logs/
 output/
-
-# Local banking datasets (top-level runtime folder only)
-/data/
-
-# OS files
-.DS_Store
-Thumbs.db
+.vscode/

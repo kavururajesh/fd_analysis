@@ -1,4 +1,5 @@
 """FastAPI layer (optional - the UI calls the service directly). Run: python -m src.main api"""
+import mimetypes
 import threading
 import uuid
 from typing import Dict
@@ -12,6 +13,8 @@ from src.domain import analytics as A
 from src.service import FDService
 from src.utils.helpers import clean
 
+mimetypes.add_type("application/javascript", ".js")          # Windows registries sometimes map .js to text/plain, which blanks the page
+mimetypes.add_type("text/css", ".css")
 router = APIRouter()
 svc = FDService()
 jobs: Dict[str, dict] = {}

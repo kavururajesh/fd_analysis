@@ -8,10 +8,11 @@ import pandas as pd
 from src.agent.collector import CollectorAgent, CollectResult
 from src.agent.executor import ReActExecutor
 from src.agent.guardrails import unverified_numbers
+from src.agent.parallel import ParallelCollector
 from src.agent.state import Trace
 from src.config import settings as S
-from src.data.files import DatasetFiles, PromotionError
-from src.data.publisher import Publisher
+from src.datastore.files import DatasetFiles, PromotionError
+from src.datastore.publisher import Publisher
 from src.domain.schema import COLUMNS
 from src.domain.validation import diff_runs, validate_dataset
 from src.memory.store import Store
@@ -38,12 +39,27 @@ class RunContext:
     carried: List[str] = field(default_factory=list)
 
 
+def _default_browser_factory():
+    from src.tools.browser import BrowserManager
+    return BrowserManager()
+
+
 class Supervisor:
-    def __init__(self, llm, store: Store, browser, trace: Trace, files: DatasetFiles = None):
+    def __init__(self, llm, store: Store, browser, trace: Trace, files: DatasetFiles = None, workers: int = None, browser_factory=None):
         self.llm, self.store, self.browser, self.trace = llm, store, browser, trace
+        self.workers, self.browser_factory = workers, browser_factory
         self.files = files or DatasetFiles()
         self.publisher = Publisher(store, self.files)
         self.collector = CollectorAgent(llm, store, browser, trace, self.files.staging)
+        self.parallel = ParallelCollector(llm, store, trace, self.files.staging, browser_factory=browser_factory or _default_browser_factory,
+                                          workers=workers)
+
+    def collect_many(self, ctx: "RunContext", sources) -> dict:
+        """Collect the given sources (in parallel when workers > 1) and store the results in ctx."""
+        todo = [s for s in sources if s.id not in ctx.results]
+        got = self.parallel.collect(todo, ctx.run_id, ctx.prev, browser=self.browser)
+        ctx.results.update(got)
+        return got
 
     # ---------------- tools ----------------
     def _tools(self, ctx: RunContext) -> ToolRegistry:
@@ -63,6 +79,12 @@ class Supervisor:
             return dict(source_id=source_id, ok=r.ok, method=r.method, rows=0 if r.df is None else len(r.df),
                         errors=r.errors[:2], warnings=r.warnings[:3])
 
+        def collect_all_sources():
+            got = self.collect_many(ctx, ctx.sources)
+            return dict(collected=len(got), ok=sum(r.ok for r in got.values()),
+                        failed=[dict(source_id=k, error=(r.errors[0] if r.errors else "")[:160]) for k, r in got.items() if not r.ok],
+                        slowest_s=max([r.metrics.get("seconds", 0) for r in got.values()] or [0]))
+
         def finalize_run():
             self._finalize(ctx)
             return dict(status=ctx.status, reasons=ctx.reasons, errors=ctx.errors[:4], rows=0 if ctx.df is None else len(ctx.df))
@@ -79,6 +101,7 @@ class Supervisor:
 
         reg.register("list_sources", "list all sources with their ids and whether they are collected", list_sources, {})
         reg.register("collect_source", "read one source (opens the page, extracts, validates, self-heals if needed)", collect_source, {"source_id": "id from list_sources"})
+        reg.register("collect_all_sources", "read ALL sources at once, in parallel (use this instead of many collect_source calls)", collect_all_sources, {})
         reg.register("finalize_run", "combine, validate and stage the collected data (decides review status)", finalize_run, {})
         reg.register("write_review_brief", "write the review brief for the human approver", write_review_brief, {})
         reg.register("finish", "end the run", finish, {"summary": "2-3 line summary"}, required=[])
@@ -95,9 +118,8 @@ class Supervisor:
         # Safety net: whatever the LLM skipped, the standard procedure completes - a flaky model cannot leave a run half-done.
         if res.status not in ("final", "done") or len(ctx.results) < len(sources) or ctx.df is None:
             self.trace.emit("supervisor", "warning", f"Supervisor LLM ended with '{res.status}'; completing the standard procedure in code")
-        for s in sources:
-            if s.id not in ctx.results:
-                reg.call("collect_source", {"source_id": s.id})
+        if any(s.id not in ctx.results for s in sources):
+            self.collect_many(ctx, sources)
         if ctx.df is None:
             self._finalize(ctx)
         if not ctx.brief:

@@ -93,3 +93,60 @@ class GigaChatClient:
             log.warning("GigaChat attempt %d/%d failed: %s", attempt, self.retries, last)
             time.sleep(min(2 ** attempt, 8))
         raise LLMError(f"GigaChat request failed: {last}")
+
+
+class OpenRouterClient(GigaChatClient):
+    """Same interface, but talks to OpenRouter (Claude Sonnet etc.) with a plain bearer key.
+    For testing the agents end to end outside the Sber network. Production keeps using GigaChat."""
+    name = "OpenRouter"
+
+    def __init__(self, api_key=None, base_url=None, model=None, timeout=None, retries=None):
+        self.api_key = api_key or S.OPENROUTER_API_KEY
+        self.base_url = (base_url or S.OPENROUTER_URL).rstrip("/")
+        self.chat_endpoint = "/chat/completions"
+        self.model = model or S.OPENROUTER_MODEL
+        self.timeout = timeout or S.LLM_TIMEOUT
+        self.retries = retries or S.LLM_RETRIES
+        self.cert, self.verify = None, True
+
+    def problems(self) -> List[str]:
+        return [] if self.api_key else ["OPENROUTER_API_KEY is not set in .env"]
+
+    def _post(self, messages, model, temperature, n) -> Dict[str, Any]:
+        issues = self.problems()
+        if issues:
+            raise LLMError(f"{self.name} is not configured: " + "; ".join(issues))
+        payload = {"model": model or self.model, "messages": messages,
+                   "temperature": S.LLM_TEMPERATURE if temperature is None else temperature, "max_tokens": 4096}
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}",
+                   "X-Title": "FD Analytics"}
+        proxies = {"https": S.OPENROUTER_PROXY, "http": S.OPENROUTER_PROXY} if S.OPENROUTER_PROXY else None
+        last = None
+        for attempt in range(1, self.retries + 1):
+            try:
+                r = requests.post(self.base_url + self.chat_endpoint, headers=headers, json=payload,
+                                  timeout=self.timeout, proxies=proxies)
+                if r.status_code == 200:
+                    return r.json()
+                last = f"HTTP {r.status_code}: {r.text[:300]}"
+                if r.status_code not in (429, 500, 502, 503, 504):
+                    break
+            except (requests.ConnectionError, requests.Timeout) as e:
+                last = f"{type(e).__name__}: {e}"
+            except (requests.RequestException, ValueError) as e:
+                last = f"{type(e).__name__}: {e}"
+                break
+            log.warning("%s attempt %d/%d failed: %s", self.name, attempt, self.retries, last)
+            time.sleep(min(2 ** attempt, 8))
+        raise LLMError(f"{self.name} request failed: {last}")
+
+
+class GroqClient(OpenRouterClient):
+    """Groq's OpenAI-compatible endpoint (fast open models such as Llama 3.3 70B). Testing outside Sber only."""
+    name = "Groq"
+
+    def __init__(self, api_key=None, base_url=None, model=None, timeout=None, retries=None):
+        super().__init__(api_key or S.GROQ_API_KEY, base_url or S.GROQ_URL, model or S.GROQ_MODEL, timeout, retries)
+
+    def problems(self) -> List[str]:
+        return [] if self.api_key else ["GROQ_API_KEY is not set in .env"]

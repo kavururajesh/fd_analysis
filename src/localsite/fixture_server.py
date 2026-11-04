@@ -1,6 +1,7 @@
-"""Tiny local web server for the local bank-page snapshots. Create the file data/fixtures/.drift to make the Sberbank page change layout."""
+"""Tiny local web server for the local bank-page snapshots. Create the file samples/.drift to make the Sberbank page change layout."""
 import functools
 import threading
+import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 from src.config import settings as S
@@ -26,6 +27,11 @@ class Handler(SimpleHTTPRequestHandler):
         if path.split("?")[0] == "/sber.html" and drift_enabled():
             path = "/sber_drift.html"
         return super().translate_path(path)
+
+    def do_GET(self):
+        if S.FIXTURE_DELAY_MS:                                   # testing aid: pretend the bank site is slow (real sites take 5-40 s)
+            time.sleep(S.FIXTURE_DELAY_MS / 1000)
+        super().do_GET()
 
     def guess_type(self, path):
         t = super().guess_type(path)

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Component, useCallback, useEffect, useState } from 'react'
 import { api } from './api.js'
 import Icon from './components/Icon.jsx'
 import { Empty, Skeleton, ToastHost } from './components/ui.jsx'
@@ -10,6 +10,16 @@ import { fmtDate, useQuery, useStored } from './util.js'
 const NAV = [['dashboard', 'Dashboard', 'grid', 'Rates, trends and comparisons'], ['assistant', 'Analytics assistant', 'chat', 'Ask questions in plain English'], ['operations', 'Data operations', 'database', 'Refresh and review data']]
 const route = () => (location.hash.replace(/^#\/?/, '').split('/')[0] || 'dashboard')
 
+class Boundary extends Component {
+  state = { error: null }
+  static getDerivedStateFromError(error) { return { error } }
+  componentDidUpdate(prev) { if (prev.k !== this.props.k && this.state.error) this.setState({ error: null }) }
+  render() {
+    if (!this.state.error) return this.props.children
+    return <Empty icon="alert" title="Something went wrong on this screen" action={<button className="btn primary" onClick={() => location.reload()}>Reload</button>}>{String(this.state.error.message || this.state.error)}</Empty>
+  }
+}
+
 export default function App() {
   const [page, setPage] = useState(route())
   const [theme, setTheme] = useStored('fd.theme', window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
@@ -17,12 +27,12 @@ export default function App() {
   useEffect(() => { document.documentElement.dataset.theme = theme }, [theme])
   useEffect(() => { const h = () => setPage(route()); window.addEventListener('hashchange', h); return () => window.removeEventListener('hashchange', h) }, [])
   const go = useCallback((p) => { location.hash = '#/' + p; window.scrollTo(0, 0) }, [])
-  useEffect(() => { if (meta && page === 'dashboard' && !meta.has_data) go('operations') }, [meta && meta.has_data]) // eslint-disable-line
 
   if (error && !meta) return <div style={{ padding: 40 }}><Empty icon="alert" title="Cannot reach the application" action={<button className="btn primary" onClick={reload}>Try again</button>}>{error.message}</Empty></div>
   if (!meta) return <div style={{ padding: 40 }}><Skeleton h={500} /></div>
 
-  const cur = NAV.find((n) => n[0] === page) || NAV[0]
+  const wanted = NAV.find((n) => n[0] === page) || NAV[0]
+  const cur = wanted[0] === 'dashboard' && !meta.has_data ? NAV[2] : wanted      // first start: guide the user to the first refresh
   const Page = { dashboard: Dashboard, assistant: Assistant, operations: Operations }[cur[0]]
   return (
     <ToastHost>
@@ -46,7 +56,7 @@ export default function App() {
             <button className="btn ghost icon-only" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} title="Switch theme"><Icon name={theme === 'dark' ? 'sun' : 'moon'} /></button>
           </header>
           <main className={cur[0] === 'assistant' ? '' : 'content'}>
-            <Page meta={meta} theme={theme} go={go} reloadMeta={reload} />
+            <Boundary k={cur[0]}><Page meta={meta} theme={theme} go={go} reloadMeta={reload} /></Boundary>
           </main>
         </div>
         <nav className="mobile-nav" aria-label="Main navigation">{NAV.map(([k, label, icon]) => <a key={k} href={`#/${k}`} className={cur[0] === k ? 'active' : ''}><Icon name={icon} />{label.split(' ')[0]}</a>)}</nav>

@@ -24,7 +24,7 @@ To change the UI: `cd web && npm install && npm run build` (development with hot
 ```
 Bank sources (web, JS tabs, PDF)
    └─ Ingestion & automation   src/agent (supervisor, collector), src/tools (Playwright browser, parsers), config/sources.*.yaml
-        └─ Validate · stage · swap   src/domain/validation.py, src/data (files.py, publisher.py)
+        └─ Validate · stage · swap   src/domain/validation.py, src/datastore (files.py, publisher.py)
              └─ Storage              data/current (live) · data/staging · data/fd_agent.db (SQLite: runs, history, layouts, audit)
                   └─ Analytics       src/domain (analytics, charts) · src/tools/analytics_tools.py
                        └─ Experience ui/ (Streamlit) · src/api (FastAPI) · Excel report
@@ -66,11 +66,22 @@ engine answers (sidebar shows which one is active). Then run `python -m evals.ev
 Add `actions: [{click: 'text=…'}]` in `config/sources.live.yaml` for tabs (ICICI amount tabs, SBI >₹25Cr).
 
 ## Bank coverage
-`config/sources.live.yaml` now lists **11 sources across 8 banks**: Sberbank, HDFC, ICICI, SBI, RBL (already calibrated on snapshots) plus Axis, PNB, Canara, Union Bank, Equitas SFB and Punjab & Sind (URLs found 3-Nov-2026 via web search).
-- The six new entries are **config only**: not opened, not calibrated, not tested. Run `python -m src.main check <id>` for each, fix the URL if needed (Axis/Equitas/PSB PDF names change with every revision), then refresh and approve.
-- Not yet added (no official bulk-rate page found): Kotak, Yes Bank, IndusInd, Bank of Baroda, Bank of India, Indian Bank, IDBI, Federal, AU SFB, Bandhan. The comment block at the bottom of the file lists them; add one entry per bank once you have the URL.
+`config/sources.live.yaml` lists **32 sources across 29 banks** (found by web search on 3-Nov-2026):
+- First wave: Sberbank, HDFC, ICICI, SBI, RBL, Axis, PNB, Canara, Union Bank, Equitas SFB, Punjab & Sind.
+- Second wave: Kotak, Bank of Baroda (up to / above Rs 10 Cr), Bank of India, Indian Bank, Yes Bank, Federal Bank, IDBI, Bandhan, AU SFB, IndusInd, Central Bank of India, UCO, Bank of Maharashtra, Indian Overseas Bank, South Indian Bank, Karur Vysya, J&K Bank, City Union Bank.
+- **All of these are config only**: the pages were not opened or calibrated from the build environment (bank sites are not reachable from there). Run `python -m src.main check-all` on the bank network: it opens every source in parallel and prints OK / PROBLEM, the tables found and the date on the page. Fix the URL of any PROBLEM source (PDF names change with every revision), then refresh and approve; the Collector agent learns each layout on the first run.
+- Not added: foreign banks (HSBC, Standard Chartered, DBS: retail rates only online), IDFC FIRST (live URL still missing), DCB, Dhanlaxmi, CSB, TMB, Ujjivan, Jana (no official bulk-rate page found).
 - A failing **peer** source only gives a warning and its previous rates are carried forward as *stale*; a failing Sberbank source still blocks the run.
 - The local snapshot mode (`sources.local.yaml`) still holds the original 9 sources from the reference workbook.
+
+## Parallel collection
+A refresh reads many banks at the same time (`COLLECT_WORKERS`, default 3):
+- **One browser per worker thread** (Playwright's sync API cannot be shared between threads); one isolated context per source.
+- **Shared queue + result map keyed by source id.** The dataset is assembled in config order, so the output never depends on which bank finished first (tested: parallel and sequential runs give identical data).
+- **Per-website limit** (`COLLECT_PER_HOST`, default 1): two sources on the same site are never fetched together; a worker that finds a site busy takes another source.
+- **LLM limit** (`COLLECT_LLM_LIMIT`): self-healing calls to GigaChat run at most 2 at a time.
+- **Isolation, retry, deadline**: a crashing source only fails itself; temporary network errors are retried (`COLLECT_RETRIES`); `COLLECT_TOTAL_DEADLINE_S` stops a hung page from blocking the run.
+- Measured on the 9 local pages with a simulated 2 s bank delay (`FIXTURE_DELAY_MS=2000`, `COLLECT_PER_HOST=9`): 1 worker 20.8 s, 3 workers 8.1 s, 5 workers 5.1 s, identical 1192 rates. With the default per-site limit of 1 all local pages share one host and run one by one, so the benefit appears with real banks (each on its own website). Not yet measured on real bank sites.
 
 ## Other commands
 `python -m src.main refresh | ask "…" | check <id> | api | simulate-drift on|off | eval` · `run_tests.bat` · API docs at `/docs` after `run_api.bat`.
@@ -80,7 +91,7 @@ Internal VM/container behind Sber SSO · SQLite → Sber database (change in `sr
 Needs Sber IT and security review.
 
 ## Status (honest)
-- ✔ 41 automated tests: parsing, layouts, validation, agent loop guards, safe replacement (incl. corrupted staging, rollback, superseded runs), chart specs, chatbot charts and explanations, full browser runs on local snapshots.
+- ✔ 54 automated tests: parsing, layouts, validation, agent loop guards, safe replacement (incl. corrupted staging, rollback, superseded runs), chart specs, chatbot charts and explanations, full browser runs on local snapshots.
 - ✔ Extraction on local snapshots matches the reference workbook cell by cell (9/9 sources).
 - ✘ Not tested: real GigaChat and the real bank websites (not reachable from the build environment). Live page layouts need one-time calibration on your laptop.
 - ✘ Dockerfile is untested and optional. No external Git repository was available to me, so "existing code" = the earlier build in this project, which was reused and extended.

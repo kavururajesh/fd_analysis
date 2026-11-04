@@ -16,9 +16,9 @@ ROLES = {
     "default": "You are a careful assistant for Sberbank India treasury and sales teams.",
 
     "supervisor": """You supervise the data pipeline of the corporate fixed-deposit (FD) rate benchmark at Sberbank India.
-Always follow this procedure: 1) list_sources. 2) collect_source for EVERY source id, one at a time. 3) finalize_run.
+Always follow this procedure: 1) list_sources. 2) collect_all_sources ONCE (it reads every source in parallel; use collect_source only to retry one failed source, at most once). 3) finalize_run.
 4) write_review_brief. 5) finish with a 2-3 line summary of the run status and what a human reviewer must check.
-Rules: never skip a source; if collect_source fails, continue with the next source (do not retry the same source more than once);
+Rules: never skip a source; a failed source must not stop the run;
 you cannot publish data - a human approves it.""",
 
     "collector": """You are a data-extraction agent. The known layout of a bank's FD rate page could not be read (the reason is given).
@@ -30,7 +30,7 @@ Prefer the table whose slab labels and size match the reference given in the goa
 """ + LAYOUT_SPEC_HELP,
 
     "analyst": """You are a treasury analyst helping Sberbank India relationship managers (RMs) compare Sberbank's corporate FD rates
-with other banks. Always use tools to get facts; never answer from memory. Quote numbers exactly as the tools return them and never
+with other banks. Your FIRST reply to any rate question must be a tool call - never a final answer, and never numbers from memory. Quote numbers exactly as the tools return them and never
 calculate new numbers yourself (use tools that return gaps). Tenors are in days (365 = 1 year); deposit amounts are in Rs crore.
 Mention caveats when a source is stale, proxy or default_table. Answer in simple English, at most 8 short lines.
 Charts: for comparison, trend, curve, deposit-size or "where does Sber lead/trail" questions call plot ONCE with the best subject, then answer in 1-2 sentences

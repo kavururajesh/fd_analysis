@@ -55,3 +55,16 @@ def test_unknown_chart_subject_is_reported_to_the_agent(live):
     _, df, prev = live.data()
     ok, obs = build_analytics_tools(df, prev, sink=[]).call("plot", {"subject": "radar"})
     assert not ok and "subject must be one of" in obs
+
+
+def test_model_that_answers_without_tools_is_pushed_to_use_them(live):
+    """A model that invents numbers on its first reply must be sent back to call a tool; the final answer then comes from data."""
+    from src.agent.analyst import AnalystAgent
+    from src.llm.offline import ScriptedLLM
+    _, df, prev = live.data()
+    llm = ScriptedLLM([json.dumps(dict(thought="x", final="Best is BankX at 7.45%.")),                         # no tool: made-up
+                       json.dumps(dict(thought="ok", action="plot", args=dict(subject="rate_curve", amount_cr=10))),
+                       json.dumps(dict(thought="y", final="Sberbank is shown against peers.")),
+                       "Sberbank is competitive."])
+    a = AnalystAgent(llm, df, prev).ask("Compare Sberbank with other banks at 10 cr across tenors")
+    assert a.chart and "7.45" not in a.text and any("without using any data tool" in s for s in a.steps)

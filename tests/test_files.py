@@ -4,7 +4,7 @@ import pytest
 
 from src.agent.state import Trace
 from src.agent.supervisor import Supervisor
-from src.data.files import PromotionError
+from src.datastore.files import PromotionError
 from src.llm.offline import OfflineLLM
 from src.service import FDService
 from src.tools.sources import load_sources

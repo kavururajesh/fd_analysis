@@ -99,3 +99,59 @@ def test_live_config_is_valid_and_covers_many_banks():
     assert len(ids) == len(set(ids)) and len(live) >= 11
     assert {"Sberbank", "HDFC", "ICICI", "SBI", "RBL", "Axis", "PNB", "Canara"} <= {s.bank for s in live}
     assert all(s.url.startswith("https://") and s.kind in ("html", "browser", "pdf") for s in live)
+
+
+def test_dotenv_inline_comments_are_ignored(tmp_path, monkeypatch):
+    import os
+    from src.config import settings as S
+    f = tmp_path / ".env"
+    f.write_text('T_MODE=local     # local = snapshots | live\nT_QUOTED="a # b"  # c\nT_URL=https://h/v1#frag\n')
+    for k in ("T_MODE", "T_QUOTED", "T_URL"):
+        monkeypatch.delenv(k, raising=False)
+    S._load_dotenv(f)
+    assert (os.environ["T_MODE"], os.environ["T_QUOTED"], os.environ["T_URL"]) == ("local", "a # b", "https://h/v1#frag")
+    for k in ("T_MODE", "T_QUOTED", "T_URL"):
+        os.environ.pop(k, None)
+
+
+def test_openrouter_client_and_factory(monkeypatch):
+    from src.config import settings as S
+    from src.llm import client as C
+    from src.llm.factory import get_llm, llm_status
+    monkeypatch.setattr(S, "OPENROUTER_API_KEY", "")
+    assert get_llm("openrouter").problems()                      # no key -> clear problem, not a crash
+    monkeypatch.setattr(S, "OPENROUTER_API_KEY", "sk-or-v1-test")
+    llm = get_llm("openrouter")
+    assert not llm.problems() and "OpenRouter" in llm_status(llm)
+    seen = {}
+
+    class R:
+        status_code = 200
+        def json(self): return {"choices": [{"message": {"content": "hello"}}]}
+    def fake_post(url, headers=None, json=None, timeout=None, proxies=None):
+        seen.update(url=url, auth=headers["Authorization"], model=json["model"]); return R()
+    monkeypatch.setattr(C.requests, "post", fake_post)
+    assert llm.chat([{"role": "user", "content": "hi"}]) == "hello"
+    assert seen["url"].endswith("/chat/completions") and seen["auth"] == "Bearer sk-or-v1-test"
+    assert seen["model"] == "anthropic/claude-sonnet-4.5"
+
+
+def test_groq_client(monkeypatch):
+    from src.config import settings as S
+    from src.llm import client as C
+    from src.llm.factory import get_llm, llm_status
+    monkeypatch.setattr(S, "GROQ_API_KEY", "")
+    assert get_llm("groq").problems()
+    monkeypatch.setattr(S, "GROQ_API_KEY", "gsk_test")
+    llm = get_llm("groq")
+    assert "Groq" in llm_status(llm)
+    seen = {}
+
+    class R:
+        status_code = 200
+        def json(self): return {"choices": [{"message": {"content": "ok"}}]}
+    def fake_post(url, headers=None, json=None, timeout=None, proxies=None):
+        seen.update(url=url, auth=headers["Authorization"], model=json["model"]); return R()
+    monkeypatch.setattr(C.requests, "post", fake_post)
+    assert llm.chat([{"role": "user", "content": "hi"}]) == "ok"
+    assert seen["url"] == "https://api.groq.com/openai/v1/chat/completions" and seen["auth"] == "Bearer gsk_test"
